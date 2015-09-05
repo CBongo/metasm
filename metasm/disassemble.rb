@@ -24,6 +24,10 @@ class DecodedInstruction
 	attr_accessor :comment
 	# a cache of the binding used by the backtracker to emulate this instruction
 	attr_accessor :backtrace_binding
+	# used during fixed-size instruction decoding to hold the decoded raw opcode
+	attr_accessor :raw_data
+	# arbitrary data used during decoding, architecture-specific
+	attr_accessor :misc
 
 	# create a new DecodedInstruction with an Instruction whose cpu is the argument
 	# can take an existing Instruction as argument
@@ -502,14 +506,16 @@ class Disassembler
 
 		# add pseudo-xrefs for exe relocs
 		if (not type or type == :reloc) and l = get_label_at(addr) and a = @inv_section_reloc[l]
+			x_more = []
 			a.each { |b, e, o, r|
 				addr = Expression[b]+o
 				# ignore relocs embedded in an already-listed instr
-				x << Xref.new(:reloc, addr) if not x.find { |x_|
+				x_more << Xref.new(:reloc, addr) if not x.find { |x_|
 					next if not x_.origin or not di_at(x_.origin)
 					(addr - x_.origin) < @decoded[x_.origin].bin_length rescue false
 				}
 			}
+			x.concat x_more
 		end
 
 		x.each { |x_| yield x_ }
@@ -540,7 +546,6 @@ class Disassembler
 	def normalize(addr)
 		return addr if not addr or addr == :default
 		addr = Expression[addr].bind(@old_prog_binding).reduce if not addr.kind_of? Integer
-		addr %= 1 << [@cpu.size, 32].max if @cpu and addr.kind_of? Integer
 		addr
 	end
 
@@ -803,7 +808,7 @@ puts "  finalize subfunc #{Expression[subfunc]}" if debug_backtrace
 			if not di = @cpu.decode_instruction(block.edata, di_addr)
 				ed = block.edata
 				break if ed.ptr >= ed.length and get_section_at(di_addr) and di = block.list.last
-				puts "#{ed.ptr >= ed.length ? "end of section reached" : "unknown instruction #{ed.data[di_addr-block.address+block.edata_ptr, 4].to_s.unpack('H*')}"} at #{Expression[di_addr]}" if $VERBOSE
+				puts "#{ed.ptr >= ed.length ? "end of section reached" : "unknown instruction #{ed.data[di_addr-block.address+block.edata_ptr, 4].to_s.unpack('H*').first}"} at #{Expression[di_addr]}" if $VERBOSE
 				return
 			end
 
