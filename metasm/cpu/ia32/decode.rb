@@ -403,7 +403,12 @@ class Ia32
 					# ror a, b  =>  (a >> b) | (a << (32-b))
 					{ a0 => Expression[[[[a0, :&, operandmask], e_op, sz], :|, [[a0, :&, operandmask], inv_op, isz]], :&, operandmask] }
 				}
-			when 'sar', 'shl', 'sal'; lambda { |di, a0, a1| { a0 => Expression[a0, (op[-1] == ?r ? :>> : :<<), [a1, :%, [opsz(di), 32].max]] } }
+			when 'shl', 'sal'; lambda { |di, a0, a1| { a0 => Expression[a0, (op[-1] == ?r ? :>> : :<<), [a1, :%, [opsz(di), 32].max]] } }
+			when 'sar'; lambda { |di, a0, a1|
+				sz = [opsz(di), 32].max
+				a1 = [a1, :%, sz]
+				{ a0 => Expression[[a0, :>>, a1], :|,
+						   [[[mask[di], :*, sign[a0, di]], :<<, [sz, :-, a1]], :&, mask[di]]] } }
 			when 'shr'; lambda { |di, a0, a1| { a0 => Expression[[a0, :&, mask[di]], :>>, [a1, :%, opsz(di)]] } }
 			when 'shrd'
 				lambda { |di, a0, a1, a2|
@@ -423,7 +428,7 @@ class Ia32
 			when 'pop'
 				lambda { |di, a0| { esp => Expression[esp, :+, opsz(di)/8],
 					a0 => Indirection[esp, opsz(di)/8, di.address] } }
-			when 'pushfd', 'pushf'
+			when 'pushfd', 'pushf', 'pushfq'
 				# TODO Unknown per bit
 				lambda { |di|
 					efl = Expression[0x202]
@@ -434,7 +439,7 @@ class Ia32
 					bts[11, :eflag_o]
 					{ esp => Expression[esp, :-, opsz(di)/8], Indirection[esp, opsz(di)/8, di.address] => efl }
 				}
-			when 'popfd', 'popf'
+			when 'popfd', 'popf', 'popfq'
 				lambda { |di| bt = lambda { |pos| Expression[[Indirection[esp, opsz(di)/8, di.address], :>>, pos], :&, 1] }
 					{ esp => Expression[esp, :+, opsz(di)/8], :eflag_c => bt[0], :eflag_z => bt[6], :eflag_s => bt[7], :eflag_o => bt[11] } }
 			when 'sahf'
