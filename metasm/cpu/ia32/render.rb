@@ -67,6 +67,9 @@ class Ia32
 			r << 'seg_' << pfx[:seg] << ' ' if pfx[:seg]
 		end
 		r << i.opname
+		if i.args.size > 0
+		  r << ' ' * [(6 - i.opname.size), 0].max
+		end
 		sep = ' '
 		i.args.each { |a|
 			a.instruction = i if a.kind_of? ModRM

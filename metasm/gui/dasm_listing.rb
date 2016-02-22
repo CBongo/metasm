@@ -445,7 +445,7 @@ class AsmListingWidget < DrawableWidget
 						arrows_addr << [rdi.address, addr]
 					}
 				end
-				str_c << ["#{Expression[di.address]}    ", :address]
+				str_c << ["  #{Expression[di.address]}    ", :address]
 				if @raw_data_length.to_i > 0
 					if s = @dasm.get_edata_at(curaddr)
 						raw = s.read(di.bin_length)
@@ -457,7 +457,7 @@ class AsmListingWidget < DrawableWidget
 					raw += (di.bin_length > @raw_data_length ? '-  ' : '   ')
 					str_c << [raw, :raw_data]
 				end
-				str_c << ["#{di.instruction} ".ljust(di.comment ? 24 : 0), :instruction]
+				str_c << ["#{di.instruction} ".ljust(di.comment ? 36 : 0), :instruction]
 				str_c << [" ; #{di.comment.join(' ')}", :comment] if di.comment
 				nl[]
 
@@ -558,7 +558,7 @@ class AsmListingWidget < DrawableWidget
 						aoff = len
 					end
 				end
-				str_c << ["#{Expression[curaddr]}    ", :address]
+				str_c << ["  #{Expression[curaddr]}    ", :address]
 				if @raw_data_length.to_i > 0
 					if s = @dasm.get_section_at(curaddr)
 						raw = s[0].read([aoff, @raw_data_length].min)
@@ -571,7 +571,7 @@ class AsmListingWidget < DrawableWidget
 					str_c << [raw, :raw_data]
 				end
 				str_c << ["#{label} ", :label] if label
-				str_c << [dat.ljust(comment ? 24 : 0), :instruction]
+				str_c << [dat.ljust(comment ? 36 : 0), :instruction]
 				str_c << [" ; #{comment.join(' ')}", :comment] if comment
 				nl[]
 				curaddr += aoff

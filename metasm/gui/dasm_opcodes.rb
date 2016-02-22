@@ -147,7 +147,7 @@ class AsmOpcodeWidget < DrawableWidget
 					nl[]
 				}
 			end
-			render["#{Expression[curaddr]}    ", :address]
+			render["  #{Expression[curaddr]}    ", :address]
 
 			if di = di_at(curaddr)
 				if @raw_data_length.to_i > 0

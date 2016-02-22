@@ -68,7 +68,7 @@ class TestX86_64 < Test::Unit::TestCase
 		assert_equal('ah', op[bin("\xfe\xc4")])
 		assert_equal('spl', op[bin("\x40\xfe\xc4")])
 		assert_equal('r12b', op[bin("\x41\xfe\xc4")])
-		assert_equal('[rip-6+12h]', op[bin("\x8d\x05\x0c\0\0\0")])
+		assert_equal('[rip-6+12]', op[bin("\x8d\x05\x0c\0\0\0")])
 	end
 
 	def test_opsz
@@ -98,7 +98,7 @@ class TestX86_64 < Test::Unit::TestCase
 	def test_lol
 		# x64 nop weirdnesses
 		assert_equal(bin("\x87\xc0"), assemble('xchg eax, eax'))
-		assert_equal('xchg r8, rax', disassemble(bin("\x49\x90")).decoded[0].instruction.to_s)
+		assert_equal('xchg   r8, rax', disassemble(bin("\x49\x90")).decoded[0].instruction.to_s)
 	end
 
 	def test_C_size

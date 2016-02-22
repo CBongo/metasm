@@ -73,9 +73,11 @@ class Expression
 			e = -e
 		end
 		if e < 10; e = e.to_s
+		elsif e < 0x100;       e = '%02x' % e
+		#elsif e < 0x10000;     e = '%04x' % e
+		#elsif e < 0x100000000; e = '%08x' % e
 		else
-			e = '%xh' % e
-			e = '0' << e unless (?0..?9).include? e[0]
+			e = '%x' % e
 		end
 		e = '-' << e if neg
 		e
