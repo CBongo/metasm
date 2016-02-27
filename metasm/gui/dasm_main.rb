@@ -35,7 +35,7 @@ class DisasmWidget < ContainerChoiceWidget
 	attr_accessor :focus_changed_callback
 	attr_accessor :parent_widget
 
-	def initialize_widget(dasm, ep=[])
+	def initialize_widget(dasm, parent=nil, ep=[])
 		@dasm = dasm
 		@dasm.gui = self
 		ep = [ep] if not ep.kind_of? Array
@@ -45,7 +45,7 @@ class DisasmWidget < ContainerChoiceWidget
 		@keyboard_callback = {}
 		@keyboard_callback_ctrl = {}
 		@clones = [self]
-		@parent_widget = nil
+		@parent_widget = parent
 		@gui_update_counter_max = 100
 		@dasm.callback_prebacktrace ||= lambda { Gui.main_iter }
 		start_disassemble_bg
@@ -103,6 +103,13 @@ class DisasmWidget < ContainerChoiceWidget
 		@clones.delete self
 	end
 
+	def update_scrollbar(pos, fnbar=Win32Gui::SB_VERT)
+    @parent_widget.update_scrollbar(pos, fnbar)
+  end
+  
+  def init_scrollbar(pos, fnbar=Win32Gui::SB_VERT, page=1, max=10, min=0)
+    @parent_widget.init_scrollbar(pos,fnbar,page,max,min)
+  end
 	# returns the address of the item under the cursor in current view
 	def curaddr
 		curview.current_address
@@ -910,7 +917,7 @@ class DasmWindow < Window
 	def display(dasm, ep=[])
 		@dasm_widget.terminate if @dasm_widget
 		ep = [ep] if not ep.kind_of? Array
-		@dasm_widget = DisasmWidget.new(dasm, ep)
+		@dasm_widget = DisasmWidget.new(dasm, self, ep)
 		self.widget = @dasm_widget
 		@dasm_widget.focus_addr(ep.first) if ep.first
 		@dasm_widget

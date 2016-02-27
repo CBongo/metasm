@@ -2040,7 +2040,7 @@ class Window
 				:hcursor => Win32Gui.loadcursora(0, Win32Gui::IDC_ARROW),
 				:lpszclassname => cname,
 				:lpfnwndproc => Win32Gui.callback_alloc_c('__stdcall int wndproc(int, int, int, int)') { |hwnd, msg, wp, lp| windowproc(hwnd, msg, wp, lp) }
-
+				
 		Win32Gui.registerclassexa(cls)
 
 		@hwnd = Win32Gui.createwindowexa(win32styleex, cname, 'win32gui window', win32style, Win32Gui::CW_USEDEFAULT, Win32Gui::SW_HIDE, Win32Gui::CW_USEDEFAULT, 0, 0, 0, 0, 0)
@@ -2059,7 +2059,7 @@ class Window
 		show
 	end
 	def win32styleex; 0 ; end
-	def win32style; Win32Gui::WS_OVERLAPPEDWINDOW ; end
+	def win32style; Win32Gui::WS_OVERLAPPEDWINDOW | Win32Gui::WS_HSCROLL | Win32Gui::WS_VSCROLL ; end
 
 	def show
 		Win32Gui.showwindow(@hwnd, Win32Gui::SW_SHOWDEFAULT)
@@ -2164,6 +2164,8 @@ class Window
 				key = (?a.kind_of?(String) ? wparam.chr : wparam)
 				@widget.keypress_(key) if @widget
 			end
+		when Win32Gui::WM_VSCROLL
+		  scroll_msg(msg, wparam)
 		when Win32Gui::WM_DESTROY
 			destroy_window
 		when Win32Gui::WM_COMMAND
@@ -2220,6 +2222,58 @@ class Window
 		@widget.send(cmsg, x, y) if cmsg and @widget.respond_to? cmsg
 	end
 
+	def scroll_msg(msg, wparam)
+    si = Win32Gui.alloc_c_struct('SCROLLINFO', :cbsize => :size,
+        :fmask => Win32Gui::SIF_ALL)
+    case msg
+    when Win32Gui::WM_VSCROLL
+      Win32Gui::getscrollinfo(@hwnd, Win32Gui::SB_VERT, si)
+      oldy = si.npos
+      case wparam & 0xffff
+      when Win32Gui::SB_TOP       # home
+        si.npos = si.nmin
+      when Win32Gui::SB_BOTTOM    # end
+        si.npos = si.nmax
+      when Win32Gui::SB_LINEUP    # top arrow
+        si.npos -= 1
+      when Win32Gui::SB_LINEDOWN  # bottom arrow
+        si.npos += 1
+      when Win32Gui::SB_PAGEUP      # scroll bar above thumb
+        si.npos -= si.npage
+      when Win32Gui::SB_PAGEDOWN    # scroll bar below thumb
+        si.npos += si.npage
+      when Win32Gui::SB_THUMBTRACK  # dragging thumb
+        si.npos = si.ntrackpos
+      end
+      si.fMask = Win32Gui::SIF_POS
+      Win32Gui::setscrollinfo(@hwnd, Win32Gui::SB_VERT, si, true)
+      Win32Gui::getscrollinfo(@hwnd, Win32Gui::SB_VERT, si)
+      if si.npos != oldy
+        @widget.view(:listing).adjust_startaddr(si.npos-oldy)
+      end
+    when Win32Gui::WM_HSCROLL
+      Win32Gui::getscrollinfo(@hwnd, Win32Gui::SB_HORZ, si)
+    end
+    
+	end
+	
+	def update_scrollbar(pos, fnbar=Win32Gui::SB_VERT)
+	  #puts "update_scrollbar(pos=#{pos})"
+	  Win32Gui::setscrollpos(@hwnd, fnbar, pos, true)
+	end
+	
+	def init_scrollbar(pos, fnbar=Win32Gui::SB_VERT, page=1, max=10, min=0)
+	  #puts "init_scrollbar(pos=#{pos} page=#{page} min=#{min} max=#{max})"
+    si = Win32Gui.alloc_c_struct('SCROLLINFO', :cbsize => :size,
+        :fmask => Win32Gui::SIF_ALL,
+        :nmin => min,
+        :nmax => max,
+        :npage => page,
+        :npos => pos,
+        :ntrackpos => 0)
+	  Win32Gui::setscrollinfo(@hwnd, fnbar, si, true)
+	end
+	
 	def initialize_visible_
 		return if @visible
 		@visible = true

@@ -31,12 +31,17 @@ class AsmListingWidget < DrawableWidget
 		@default_color_association = ColorTheme.merge :raw_data => :black, :arrows_bg => :palegrey,
 			:arrow_up => :darkblue, :arrow_dn => :darkyellow, :arrow_hl => :red
 	end
-
+	
+	def initialize_visible
+	  set_font("consolas 9")
+	end
+	
 	def resized(w, h)
 		col = w/@font_width
 		lin = h/@font_height
 		@caret_x = col-1 if @caret_x >= col
 		@caret_y = lin-1 if @caret_y >= lin and lin > 0
+		init_scrollbar(@startaddr, Win32Gui::SB_VERT, lin, @maxaddr, @minaddr)
 		gui_update
 	end
 
@@ -48,9 +53,20 @@ class AsmListingWidget < DrawableWidget
 			@startaddr -= off
 		end
 		@startaddr = @minaddr if @startaddr.kind_of? Integer and @startaddr < @minaddr
-		gui_update if update
+		if update
+		  update_scrollbar(@startaddr)
+		  gui_update
+		end
 	end
-
+	
+  def update_scrollbar(pos, fnbar=Win32Gui::SB_VERT)
+    @parent_widget.update_scrollbar(pos,fnbar)
+  end
+    
+  def init_scrollbar(pos, fnbar=Win32Gui::SB_VERT, page=1, max=10, min=0)
+    @parent_widget.init_scrollbar(pos,fnbar,page,max,min)
+  end
+    
 	def click(x, y)
 		set_caret_from_click(x - @arrow_zone_w, y)
 		@caret_x = 0 if @caret_x < 0
@@ -315,6 +331,7 @@ class AsmListingWidget < DrawableWidget
 			adjust_startaddr(-15)
 		when :pgdown
 			@startaddr = @line_address[@line_address.length/2] || @startaddr + 15
+			update_scrollbar(@startaddr)
 			gui_update
 		when :home
 			@caret_x = 0
